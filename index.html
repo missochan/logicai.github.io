@@ -55,48 +55,245 @@
   </p>
 
   <h2>🛠️ How It Works</h2>
-  <h3>1. Generate Tree Using Gemini</h3>
-  <pre><code>response = client.models.generate_content(
-    model="gemini-2.0-flash",
-    contents=prompt
+  <h3>1. Import neccessary packages</h3>
+  <pre><code>!pip install -q -U gradio graphviz
+  from google import genai
+  from google.genai import types
+  import os
+  import json
+  import re
+  from graphviz import Digraph
+  import gradio as gr
+  from google.api_core import retry
+  from kaggle_secrets import UserSecretsClient
+  from IPython.display import HTML, Markdown, display</code></pre>
+
+  <h3>2. Set up retry for API calls</h3>
+  <pre><code>is_retriable = lambda e: (
+    isinstance(e, genai.errors.APIError) and e.code in {429, 503})
+
+    genai.models.Models.generate_content = retry.Retry(
+    predicate=is_retriable)(genai.models.Models.generate_content)
 )</code></pre>
 
-  <h3>2. Parse Output into Structured Format</h3>
+   <h3>3.Initialize clients</h3>
+  <pre><code>def initialize_client():
+    user_secrets = UserSecretsClient()
+    google_api_key = user_secrets.get_secret("GOOGLE_API_KEY")
+    return genai.Client(api_key=google_api_key)
+)</code></pre>
+
+  <h3>4. Generate Logic Tree using Gemini</h3>
+  <pre><code> prompt = f"""
+    You're an expert in structured thinking and logic trees (like McKinsey's MECE framework).
+    Create a clean logic tree for the problem below.
+
+    Requirements:
+    - Start with the core problem
+    - Use a top-down tree format with indentation (max 3 levels)
+    - Keep node labels short (max 5-6 words)
+    - Avoid long explanations
+    - Output only the logic tree
+
+    -The tree structure, there should be a hierarchical relationship where items labeled with Roman numerals (I, II, etc.) are parent nodes, 
+    and their corresponding lettered items (a, b, c) should be child nodes beneath them.
+    
+    So, the output should look like:
+    I. Workload Issues
+    a. Excessive Hours
+    b. Unrealistic Deadlines
+    c. Constant Context Switching
+    II. Lack of Control
+    a. Limited Decision-Making Authority
+    b. Micromanagement
+    III. Insufficient Rewards
+    a. Inadequate Compensation
+    b. Lack of Recognition
+    c. Limited Career Growth
+    IV. Workplace Dynamics
+    a. Poor Management Practices
+    b. Toxic Culture
+    c. Ineffective Communication
+
+Problem: "{problem_statement}"
+"""
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt)
+    return response.text
+)</code></pre>
+  <p>
+    Give few-shots example for the model to learn how to structure the answer.
+  </p>
+
+  <h3>5. Evaluate the logic tree</h3>
+  <pre><code>eval_prompt = f""" Evaluate the following logic tree for the problem: "{problem_statement}" 
+    Criteria: 1. Is the logic tree mutually exclusive and collectively exhaustive (MECE)? 
+    2. Does it provide clear, actionable branches? 
+    3. Is it logically sound and helpful for problem-solving? 
+    
+    Rating Rubric:
+    5 (Very Good): MECE, actionable, and logically sound  
+    4 (Good): Mostly MECE and actionable with minor issues  
+    3 (OK): Reasonable structure but lacks clarity or exhaustiveness  
+    2 (Bad): Major logic or structure flaws  
+    1 (Very Bad): Not usable or logically broken
+    
+    Logic Tree: {tree_text}
+    Please rate each criteria from 1-5 according to the rating rubic and give brief feedback. """ 
+    
+    response = client.models.generate_content( 
+        model="gemini-2.0-flash", contents=eval_prompt)
+    
+    return response.text 
+)</code></pre>
+  <p>
+    Here we again instruct the model how to evaluate the prompt, and rate each prompts and give feedback.
+    We can rephrase the prompt if the result is not satisfying.
+  </p>
+
+  <h3>6. Parse Output into Structured Format</h3>
   <pre><code>def parse_logic_tree(tree_text):
     lines = tree_text.strip().split('\n')
     ... # extract Roman and lettered items into nested dict</code></pre>
 
-  <h3>3. Visualize with Graphviz</h3>
-  <pre><code>dot = Digraph()
-dot.node("root", "Where should I live?")
-dot.edge("root", "Affordability")</code></pre>
+  <h3>7. Create static logic tree image</h3>
+  <pre><code> dot = Digraph(comment='Logic Tree Mindmap', format='svg')</code></pre>
 
-  <h3>4. Evaluate Tree with AI</h3>
-  <pre><code>eval_prompt = f"""
-Evaluate the logic tree for MECE, clarity, and usefulness.
-"""
-response = client.models.generate_content(...)</code></pre>
+  <h3>8. Set up for Gradio Interface</h3>
+  <pre><code>with gr.Blocks(title="Logic Tree Generator") as demo:(...)</code></pre>
 
   <h2>📷 Demo</h2>
   <p>
     Try it live on Kaggle: <br>
-    <a href="https://www.kaggle.com/code/YOUR_USERNAME/logic-tree-generator" target="_blank">
+    <a href="https://www.kaggle.com/code/kaggleoc/logicai-gen-ai-intensive-course-capstone-2025q1" target="_blank">
       🧠 Launch Logic Tree Generator
     </a>
   </p>
 
+  <p> To thoroughly analyze each node, we'll implement a RAG-based Q&A system, enriching our insights with direct document referencing.</p>
+
+  <h3>9. Set up simple Document Q&A with RAG</h3>
+  <h3> Install necessary packages </h3>
+  <pre><code>!pip install -U -q chromadb
+from chromadb import Documents, EmbeddingFunction, Embeddings</code></pre>
+
+  <h3>10. Fill in the documents</h3>
+  <pre><code>DOCUMENT1="""Taiwan offers a vibrant and convenient lifestyle(...)"""</code></pre>
+  <p> We copy and paste what we want the model to know here.</p>
+
+   <h3>11. Covert the documents into embeddings</h3>
+  <pre><code>class GeminiEmbeddingFunction(EmbeddingFunction):
+    # Specify whether to generate embeddings for documents, or queries
+    document_mode = True
+
+    @retry.Retry(predicate=is_retriable)
+    def __call__(self, input: Documents) -> Embeddings:
+        if self.document_mode:
+            embedding_task = "retrieval_document"
+        else:
+            embedding_task = "retrieval_query"
+
+        response = client.models.embed_content(
+            model="models/text-embedding-004",
+            contents=input,
+            config=types.EmbedContentConfig(
+                task_type=embedding_task,
+            ),
+        )
+        return [e.values for e in response.embeddings]
+        </code></pre>
+  <p> Turning documents into embeddings in RAG lets the model quickly find relevant info by comparing semantic meaning, not just keywords.
+      Retrieval: How the RAG system fetches relevant documents for the query.</p>
+  
+  <h3>12. Set up vector databases using chromadb</h3>
+  <pre><code>import chromadb
+  DB_NAME = "googlecardb"
+  embed_fn = GeminiEmbeddingFunction()
+  embed_fn.document_mode = True
+  chroma_client = chromadb.Client()
+  db = chroma_client.get_or_create_collection(name=DB_NAME, embedding_function=embed_fn)
+  db.add(documents=documents, ids=[str(i) for i in range(len(documents))])
+</code></pre>
+  <p>Chroma DB enables efficient semantic search and retrieval of information, crucial for advanced RAG applications and knowledge management.</p>
+
+  <h3>13. Switch to query mode when generating embeddings</h3>
+  <pre><code>embed_fn.document_mode = False
+
+# Search the Chroma DB using the specified query.
+query = "Is Taiwan a good place to live?"
+
+result = db.query(query_texts=[query], n_results=3)
+[all_passages] = result["documents"]
+
+Markdown(all_passages[1])
+#for passage in result["documents"][0]:  # result["documents"] is a list of lists
+    #display(Markdown(passage))
+
+from IPython.display import Markdown, display
+
+# Get the passages and their distances
+passages = result["documents"][0]
+scores = result["distances"][0]  # Same index structure: list of scores per query
+
+for i, (passage, score) in enumerate(zip(passages, scores), start=1):
+    display(Markdown(f"### Passage {i} (Similarity Score: {1 - score:.4f})\n\n{passage}"))
+
+</code></pre>
+
+  <h3>15. Make query using Gemini Models</h3>
+  <pre><code>query_oneline = query.replace("\n", " ")
+
+# This prompt is where you can specify any guidance on tone, or what topics the model should stick to, or avoid.
+prompt = f"""You are a knowlegeable consultant that answers questions using text from the reference passage included below. 
+Remember you have guided the audience with bullet points like:
+
+I. Affordability
+    a. Housing Costs
+    b. Taxes and Utilities
+
+II. Career Opportunities
+    a. Job Market Availability
+    b. Salary Potential
+
+III. Lifestyle Preferences
+    a. Urban vs. Rural
+    b. Climate Preferences
+    c. Recreational Activities
+
+Based on the content you have generated, provide strong reasoning for your answers according to the above structure.
+
+If the passage is irrelevant to the answer, you may ignore it.
+
+QUESTION: {query_oneline}
+
+
+"""
+
+# Add the retrieved documents to the prompt.
+for passage in all_passages:
+    passage_oneline = passage.replace("\n", " ")
+    prompt += f"PASSAGE: {passage_oneline}\n"
+
+print(prompt)
+
+
+answer = client.models.generate_content(
+    model="gemini-2.0-flash",
+    contents=prompt)
+  </code></pre>
+
   <h2>⚠️ Limitations</h2>
   <ul>
-    <li>Tree quality depends on prompt clarity and model constraints</li>
     <li>Deep branching is still linear; more levels may confuse users</li>
     <li>Limited logic validation—some outputs may not be truly MECE</li>
   </ul>
 
-  <h2>🚀 Future Possibilities</h2>
+  <h2>🚀 What's next</h2>
   <ul>
-    <li>Use RAG to make trees context-aware (e.g. location, user preferences)</li>
-    <li>Allow real-time edits or feedback loops with the AI</li>
-    <li>Export trees into slide decks or decision trees for execs</li>
+    <li>Support for document uploads to enhance RAG and grounding capabilities.</li>
+    <li>Enable function calling to dynamically expand or edit logic tree nodes.</li>
+    <li>Add vector store for persistent knowledge integration and retrieval.</li>
   </ul>
 
   <p><em>LogicAI empowers structured thinking—one tree at a time.</em></p>
