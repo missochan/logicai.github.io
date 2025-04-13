@@ -57,22 +57,22 @@
   <h2>🛠️ How It Works</h2>
   <h3>1. Import neccessary packages</h3>
   <pre><code>!pip install -q -U gradio graphviz
-  from google import genai
-  from google.genai import types
-  import os
-  import json
-  import re
-  from graphviz import Digraph
-  import gradio as gr
-  from google.api_core import retry
-  from kaggle_secrets import UserSecretsClient
-  from IPython.display import HTML, Markdown, display</code></pre>
+from google import genai
+from google.genai import types
+import os
+import json
+import re
+from graphviz import Digraph
+import gradio as gr
+from google.api_core import retry
+from kaggle_secrets import UserSecretsClient
+from IPython.display import HTML, Markdown, display</code></pre>
 
   <h3>2. Set up retry for API calls</h3>
   <pre><code>is_retriable = lambda e: (
     isinstance(e, genai.errors.APIError) and e.code in {429, 503})
 
-    genai.models.Models.generate_content = retry.Retry(
+genai.models.Models.generate_content = retry.Retry(
     predicate=is_retriable)(genai.models.Models.generate_content)
 )</code></pre>
 
@@ -84,36 +84,35 @@
 )</code></pre>
 
   <h3>4. Generate Logic Tree using Gemini</h3>
-  <pre><code> prompt = f"""
-    You're an expert in structured thinking and logic trees (like McKinsey's MECE framework).
+  <pre><code> prompt = f"""You're an expert in structured thinking and logic trees (like McKinsey's MECE framework).
     Create a clean logic tree for the problem below.
 
-    Requirements:
-    - Start with the core problem
-    - Use a top-down tree format with indentation (max 3 levels)
-    - Keep node labels short (max 5-6 words)
-    - Avoid long explanations
-    - Output only the logic tree
+   Requirements:
+   - Start with the core problem
+   - Use a top-down tree format with indentation (max 3 levels)
+   - Keep node labels short (max 5-6 words)
+   - Avoid long explanations
+   - Output only the logic tree
 
-    -The tree structure, there should be a hierarchical relationship where items labeled with Roman numerals (I, II, etc.) are parent nodes, 
+   -The tree structure, there should be a hierarchical relationship where items labeled with Roman numerals (I, II, etc.) are parent nodes, 
     and their corresponding lettered items (a, b, c) should be child nodes beneath them.
     
-    So, the output should look like:
-    I. Workload Issues
-    a. Excessive Hours
-    b. Unrealistic Deadlines
-    c. Constant Context Switching
-    II. Lack of Control
-    a. Limited Decision-Making Authority
-    b. Micromanagement
-    III. Insufficient Rewards
-    a. Inadequate Compensation
-    b. Lack of Recognition
-    c. Limited Career Growth
-    IV. Workplace Dynamics
-    a. Poor Management Practices
-    b. Toxic Culture
-    c. Ineffective Communication
+   So, the output should look like:
+   I. Workload Issues
+   a. Excessive Hours
+   b. Unrealistic Deadlines
+   c. Constant Context Switching
+   II. Lack of Control
+   a. Limited Decision-Making Authority
+   b. Micromanagement
+   III. Insufficient Rewards
+   a. Inadequate Compensation
+   b. Lack of Recognition
+   c. Limited Career Growth
+   IV. Workplace Dynamics
+   a. Poor Management Practices
+   b. Toxic Culture
+   c. Ineffective Communication
 
 Problem: "{problem_statement}"
 """
@@ -175,7 +174,8 @@ Problem: "{problem_statement}"
 
   <h3>9. Set up simple Document Q&A with RAG</h3>
   <h3> Install necessary packages </h3>
-  <pre><code>!pip install -U -q chromadb
+  <pre><code>
+!pip install -U -q chromadb
 from chromadb import Documents, EmbeddingFunction, Embeddings</code></pre>
 
   <h3>10. Fill in the documents</h3>
@@ -207,13 +207,14 @@ from chromadb import Documents, EmbeddingFunction, Embeddings</code></pre>
       Retrieval: How the RAG system fetches relevant documents for the query.</p>
   
   <h3>12. Set up vector databases using chromadb</h3>
-  <pre><code>import chromadb
-  DB_NAME = "googlecardb"
-  embed_fn = GeminiEmbeddingFunction()
-  embed_fn.document_mode = True
-  chroma_client = chromadb.Client()
-  db = chroma_client.get_or_create_collection(name=DB_NAME, embedding_function=embed_fn)
-  db.add(documents=documents, ids=[str(i) for i in range(len(documents))])
+  <pre><code>
+import chromadb
+DB_NAME = "googlecardb"
+embed_fn = GeminiEmbeddingFunction()
+embed_fn.document_mode = True
+chroma_client = chromadb.Client()
+db = chroma_client.get_or_create_collection(name=DB_NAME, embedding_function=embed_fn)
+db.add(documents=documents, ids=[str(i) for i in range(len(documents))])
 </code></pre>
   <p>Chroma DB enables efficient semantic search and retrieval of information, crucial for advanced RAG applications and knowledge management.</p>
 
