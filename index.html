@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LogicAI - Structuring Thought with Generative AI</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      margin: 40px auto;
+      max-width: 800px;
+      padding: 0 20px;
+      color: #333;
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    code {
+      background-color: #f4f4f4;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    pre {
+      background-color: #f4f4f4;
+      padding: 15px;
+      overflow-x: auto;
+      border-radius: 5px;
+    }
+    .author {
+      font-style: italic;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>LogicAI: Structuring Thought with Generative AI</h1>
+  <p class="author">By Olivia Chan</p>
+
+  <h2>💡 Problem: How Can We Think More Clearly?</h2>
+  <p>
+    In today's world of overwhelming decisions—"Where should I live?", "What career should I pursue?", "How can I improve my team?"—clear thinking is more important than ever. Logic trees, like those used by McKinsey consultants, help break problems into structured, MECE (Mutually Exclusive, Collectively Exhaustive) branches. But what if AI could build these trees for us?
+  </p>
+
+  <h2>🤖 AI Solution: LogicAI</h2>
+  <p>
+    LogicAI is a generative AI assistant that turns any complex problem into a visual logic tree. Powered by Gemini 2.0 Flash and presented through a simple Gradio interface, it:
+    <ul>
+      <li>Takes a user’s problem statement</li>
+      <li>Uses LLM reasoning to break it into structured logic trees</li>
+      <li>Visualizes the tree with <code>Graphviz</code></li>
+      <li>Evaluates the logic with MECE principles</li>
+    </ul>
+  </p>
+
+  <h2>🛠️ How It Works</h2>
+  <h3>1. Generate Tree Using Gemini</h3>
+  <pre><code>response = client.models.generate_content(
+    model="gemini-2.0-flash",
+    contents=prompt
+)</code></pre>
+
+  <h3>2. Parse Output into Structured Format</h3>
+  <pre><code>def parse_logic_tree(tree_text):
+    lines = tree_text.strip().split('\n')
+    ... # extract Roman and lettered items into nested dict</code></pre>
+
+  <h3>3. Visualize with Graphviz</h3>
+  <pre><code>dot = Digraph()
+dot.node("root", "Where should I live?")
+dot.edge("root", "Affordability")</code></pre>
+
+  <h3>4. Evaluate Tree with AI</h3>
+  <pre><code>eval_prompt = f"""
+Evaluate the logic tree for MECE, clarity, and usefulness.
+"""
+response = client.models.generate_content(...)</code></pre>
+
+  <h2>📷 Demo</h2>
+  <p>
+    Try it live on Kaggle: <br>
+    <a href="https://www.kaggle.com/code/YOUR_USERNAME/logic-tree-generator" target="_blank">
+      🧠 Launch Logic Tree Generator
+    </a>
+  </p>
+
+  <h2>⚠️ Limitations</h2>
+  <ul>
+    <li>Tree quality depends on prompt clarity and model constraints</li>
+    <li>Deep branching is still linear; more levels may confuse users</li>
+    <li>Limited logic validation—some outputs may not be truly MECE</li>
+  </ul>
+
+  <h2>🚀 Future Possibilities</h2>
+  <ul>
+    <li>Use RAG to make trees context-aware (e.g. location, user preferences)</li>
+    <li>Allow real-time edits or feedback loops with the AI</li>
+    <li>Export trees into slide decks or decision trees for execs</li>
+  </ul>
+
+  <p><em>LogicAI empowers structured thinking—one tree at a time.</em></p>
+</body>
+</html>
