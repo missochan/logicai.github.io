@@ -71,10 +71,9 @@ from IPython.display import HTML, Markdown, display</code></pre>
   <h3>2. Set up retry for API calls</h3>
   <pre><code>is_retriable = lambda e: (
     isinstance(e, genai.errors.APIError) and e.code in {429, 503})
-
-genai.models.Models.generate_content = retry.Retry(
-    predicate=is_retriable)(genai.models.Models.generate_content)
 )</code></pre>
+<pre><code>genai.models.Models.generate_content = retry.Retry(
+    predicate=is_retriable)(genai.models.Models.generate_content)</code></pre>
 
    <h3>3.Initialize clients</h3>
   <pre><code>def initialize_client():
